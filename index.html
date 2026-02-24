@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morning Routine</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    min-height: 100vh; color: #f1f5f9; padding: 20px;
+  }
+  .container { max-width: 420px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
+  .verse {
+    text-align: center; font-style: italic; color: #cbd5e1;
+    font-size: 0.85rem; margin-bottom: 24px; padding: 0 10px;
+    line-height: 1.5;
+  }
+  .day-tabs {
+    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px;
+    margin-bottom: 20px; -webkit-overflow-scrolling: touch;
+  }
+  .day-tab {
+    padding: 8px 14px; border-radius: 20px; border: none;
+    background: #334155; color: #94a3b8; font-size: 0.85rem;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    font-weight: 500;
+  }
+  .day-tab.active { background: #3b82f6; color: #fff; }
+  .day-tab.weekend { border: 1px solid #334155; }
+  .day-tab.weekend.active { background: #8b5cf6; border-color: #8b5cf6; }
+  .schedule {
+    background: #1e293b; border-radius: 16px; padding: 16px;
+    margin-bottom: 20px; border: 1px solid #334155;
+  }
+  .schedule-title { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .time-block {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid #262f3d;
+  }
+  .time-block:last-child { border-bottom: none; }
+  .time-label { font-size: 0.8rem; color: #64748b; min-width: 65px; }
+  .time-icon { font-size: 1.2rem; }
+  .time-desc { font-size: 0.95rem; color: #e2e8f0; }
+  .checklist {
+    background: #1e293b; border-radius: 16px; padding: 16px;
+    margin-bottom: 20px; border: 1px solid #334155;
+  }
+  .checklist-title { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .check-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid #262f3d; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .checkbox {
+    width: 28px; height: 28px; border-radius: 8px; border: 2px solid #475569;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s ease; flex-shrink: 0;
+  }
+  .check-item.done .checkbox {
+    background: #22c55e; border-color: #22c55e;
+  }
+  .checkmark { display: none; color: #fff; font-weight: bold; font-size: 1rem; }
+  .check-item.done .checkmark { display: block; }
+  .check-label { font-size: 1rem; color: #e2e8f0; transition: all 0.2s; }
+  .check-item.done .check-label { color: #64748b; text-decoration: line-through; }
+  .streak-section {
+    background: #1e293b; border-radius: 16px; padding: 16px;
+    margin-bottom: 20px; border: 1px solid #334155; text-align: center;
+  }
+  .streak-num { font-size: 2.5rem; font-weight: 700; color: #f59e0b; }
+  .streak-label { color: #94a3b8; font-size: 0.85rem; }
+  .week-dots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+  .dot {
+    width: 32px; height: 32px; border-radius: 50%; background: #334155;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; color: #64748b;
+  }
+  .dot.completed { background: #22c55e; color: #fff; }
+  .dot.today { border: 2px solid #3b82f6; }
+  .reset-btn {
+    display: block; margin: 0 auto; padding: 10px 24px;
+    background: #334155; color: #94a3b8; border: none;
+    border-radius: 10px; font-size: 0.85rem; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { background: #475569; color: #e2e8f0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>☀️ Morning Routine</h1>
+  <p class="subtitle" id="dateDisplay"></p>
+  <p class="verse">"Satisfy us in the morning with your unfailing love, that we may sing for joy and be glad all our days." — Psalm 90:14</p>
+
+  <div class="day-tabs" id="dayTabs"></div>
+
+  <div class="schedule" id="scheduleBlock"></div>
+
+  <div class="checklist">
+    <div class="checklist-title">Today's Checklist</div>
+    <div id="checklistItems"></div>
+  </div>
+
+  <div class="streak-section">
+    <div class="streak-num" id="streakNum">0</div>
+    <div class="streak-label">day streak 🔥</div>
+    <div class="week-dots" id="weekDots"></div>
+  </div>
+
+  <button class="reset-btn" onclick="resetDay()">Reset Today</button>
+</div>
+
+<script>
+const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const fullDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const today = new Date();
+let selectedDay = today.getDay();
+
+// In-memory state
+const state = {
+  checks: {},
+  completedDays: {}
+};
+
+const weekdaySchedule = [
+  { time: '6:30 AM', icon: '💧', desc: 'Wake up + hydrate' },
+  { time: '6:35 AM', icon: '📖', desc: 'Quiet time — Bible (20 min)' },
+  { time: '6:55 AM', icon: '💪', desc: 'Workout (30 min)' },
+  { time: '7:25 AM', icon: '🚿', desc: 'Get ready (30 min)' },
+  { time: '7:55 AM', icon: '✨', desc: 'Start the day!' }
+];
+const weekendSchedule = [
+  { time: '7:00 AM', icon: '💧', desc: 'Wake up + hydrate' },
+  { time: '7:10 AM', icon: '📖', desc: 'Quiet time — Bible + journal (20 min)' },
+  { time: '7:30 AM', icon: '💪', desc: 'Workout (30 min)' },
+  { time: '8:00 AM', icon: '🚿', desc: 'Get ready, relaxed pace' }
+];
+const weekdayChecks = [
+  'Woke up on time', 'Bible / quiet time', 'Workout', 'Got ready & started day'
+];
+const weekendChecks = [
+  'Woke up on time', 'Bible / quiet time + journal', 'Workout', 'Got ready (relaxed pace)'
+];
+
+function isWeekend(d) { return d === 0 || d === 6; }
+
+function renderTabs() {
+  const el = document.getElementById('dayTabs');
+  el.innerHTML = '';
+  days.forEach((d, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-tab' + (i === selectedDay ? ' active' : '') + (isWeekend(i) ? ' weekend' : '');
+    btn.textContent = d;
+    if (i === today.getDay()) btn.textContent += ' •';
+    btn.onclick = () => { selectedDay = i; render(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderSchedule() {
+  const sched = isWeekend(selectedDay) ? weekendSchedule : weekdaySchedule;
+  const label = isWeekend(selectedDay) ? 'Weekend Schedule 🌿' : 'Weekday Schedule';
+  let h = `<div class="schedule-title">${label}</div>`;
+  sched.forEach(s => {
+    h += `<div class="time-block">
+      <span class="time-label">${s.time}</span>
+      <span class="time-icon">${s.icon}</span>
+      <span class="time-desc">${s.desc}</span>
+    </div>`;
+  });
+  document.getElementById('scheduleBlock').innerHTML = h;
+}
+
+function getChecks() { return isWeekend(selectedDay) ? weekendChecks : weekdayChecks; }
+
+function renderChecklist() {
+  const el = document.getElementById('checklistItems');
+  const items = getChecks();
+  const key = 'day_' + selectedDay;
+  if (!state.checks[key]) state.checks[key] = {};
+  let h = '';
+  items.forEach((item, i) => {
+    const done = state.checks[key][i] ? ' done' : '';
+    h += `<div class="check-item${done}" onclick="toggleCheck(${i})">
+      <div class="checkbox"><span class="checkmark">✓</span></div>
+      <span class="check-label">${item}</span>
+    </div>`;
+  });
+  el.innerHTML = h;
+  checkDayComplete(key, items.length);
+}
+
+function toggleCheck(i) {
+  const key = 'day_' + selectedDay;
+  if (!state.checks[key]) state.checks[key] = {};
+  state.checks[key][i] = !state.checks[key][i];
+  renderChecklist();
+}
+
+function checkDayComplete(key, total) {
+  const checked = Object.values(state.checks[key] || {}).filter(Boolean).length;
+  state.completedDays[selectedDay] = checked === total;
+  renderStreak();
+}
+
+function renderStreak() {
+  let streak = 0;
+  let d = today.getDay();
+  for (let i = 0; i < 7; i++) {
+    const checkDay = (d - i + 7) % 7;
+    if (state.completedDays[checkDay]) streak++;
+    else if (i > 0) break;
+  }
+  document.getElementById('streakNum').textContent = streak;
+  const dotsEl = document.getElementById('weekDots');
+  let h = '';
+  days.forEach((d, i) => {
+    const comp = state.completedDays[i] ? ' completed' : '';
+    const tod = i === today.getDay() ? ' today' : '';
+    h += `<div class="dot${comp}${tod}">${d[0]}</div>`;
+  });
+  dotsEl.innerHTML = h;
+}
+
+function resetDay() {
+  const key = 'day_' + selectedDay;
+  state.checks[key] = {};
+  state.completedDays[selectedDay] = false;
+  render();
+}
+
+function render() {
+  const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+  document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US', opts);
+  renderTabs(); renderSchedule(); renderChecklist();
+}
+
+render();
+</script>
+</body>
+</html>
